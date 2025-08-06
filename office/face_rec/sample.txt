@@ -1,0 +1,114 @@
+from ultralytics import YOLO
+import cv2
+import face_recognition
+import numpy as np
+import os
+import pickle
+
+# Load YOLOv8 face model
+model = YOLO(r"D:\coding\office\face_rec\yolov8n-face-lindevs.pt")  # or your custom weights if trained
+
+# Load known face encodings
+known_encodings = []
+known_names = []
+for file in os.listdir("encodings"):
+    name = os.path.splitext(file)[0]
+    with open(f"encodings/{file}", "rb") as f:
+        enc = pickle.load(f)
+        known_encodings.append(enc)
+        known_names.append(name)
+
+# Start webcam or video
+cap = cv2.VideoCapture(0)  # or use CCTV feed
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    results = model(frame)[0]
+    for box in results.boxes:
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        conf = float(box.conf[0])
+
+        if conf > 0.5:
+            face_img = frame[y1:y2, x1:x2]
+            rgb_face = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)
+            encodings = face_recognition.face_encodings(rgb_face)
+
+            name = "Unknown"
+            if encodings:
+                matches = face_recognition.compare_faces(known_encodings, encodings[0])
+                if True in matches:
+                    match_index = matches.index(True)
+                    name = known_names[match_index]
+
+            # Draw box & name
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, name, (x1, y1 - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+    cv2.imshow("Long-Range Face Recognition", frame)
+    if cv2.waitKey(1) == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+test.py
+
+import face_recognition
+import cv2
+import pickle
+import os
+
+# === Config ===
+name = "Dwarakesh"
+image_path = r"D:\coding\office\face_rec\faces\Dwarakesh.jpg"
+encoding_dir = "D:/coding/office/face_rec/encodings"
+os.makedirs(encoding_dir, exist_ok=True)
+
+# === Step 1: Load the image using OpenCV (BGR format) ===
+image_bgr = cv2.imread(image_path)
+
+# Display the original image
+cv2.imshow("Original Image", image_bgr)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# === Step 2: Convert BGR to Grayscale (optional) ===
+gray_image = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+cv2.imshow("Gray Image", gray_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+# === Step 3: Convert BGR to RGB ===
+image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+# === Step 4: Encode face using face_recognition ===
+face_encodings = face_recognition.face_encodings(image_rgb)
+
+if face_encodings:
+    encoding = face_encodings[0]
+    print("✅ Face encoding successful!")
+
+    # === Step 5: Save encoding for later use ===
+    with open(os.path.join(encoding_dir, f"{name}.pkl"), "wb") as f:
+        pickle.dump(encoding, f)
+    print(f"✅ Encoding saved at: {encoding_dir}/{name}.pkl")
+else:
+    print("❌ No face found in the image.")
