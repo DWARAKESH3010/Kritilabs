@@ -1,5 +1,5 @@
 import cv2
-import os
+import s
 
 # Paths
 video_dir = r"D:\coding\office\face_rec\sample\video"
