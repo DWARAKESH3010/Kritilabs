@@ -11,7 +11,7 @@ os.makedirs(output_dir, exist_ok=True)
 # Supported video extensions
 video_extensions = ('.mp4', '.avi', '.mov', '.mkv')
 
-# Global frame counter across all videos
+# Global frame counter across all video
 frame_counter = 0
 
 # Loop through all videos in the folder
